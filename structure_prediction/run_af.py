@@ -121,8 +121,7 @@ RELAX_MAX_ITERATIONS = 0
 RELAX_ENERGY_TOLERANCE = 2.39
 RELAX_STIFFNESS = 10.0
 RELAX_EXCLUDE_RESIDUES = []
-#RELAX_MAX_OUTER_ITERATIONS = 20
-RELAX_MAX_OUTER_ITERATIONS = 5
+RELAX_MAX_OUTER_ITERATIONS = 20
 
 def _check_flag(flag_name: str, preset: str, should_be_set: bool):
     if should_be_set != bool(FLAGS[flag_name].value):
