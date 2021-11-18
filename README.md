@@ -1,4 +1,4 @@
-# Multiple-state modeling of protein structures using AlphaFold
+# Multi-state modeling of protein structures using AlphaFold
 
 ## Building state-annotated HHsuite databases
 All the required scripts and examples are in [build_state_annotated_databases](https://github.com/huhlim/alphafold-multistate/tree/main/build_state_annotated_databases)
@@ -22,3 +22,46 @@ GPCR100.${state}_cs219.ff{data,index}
 ```
 5. **Pre-built GPCR databases**  
 You can obtain state-annotated GPCR databases at [here](https://zenodo.org/deposit/5156185)
+
+## GPCR structure prediction using AlphaFold
+
+The structure prediction scripts rely on [AlphaFold](https://github.com/deepmind/alphafold). We slightly modified to conduct ablation studies and model GPCR structures in a specific activation state. You should follow the setup procedure and download genetic databases and model parameters for AlphaFold. In contrast to the original AlphaFold, our scripts are based on non-Docker version and running on top of an Anaconda environment for AlphaFold. To create an environment for running AlphaFold, you may refer to [an issue page](https://github.com/deepmind/alphafold/issues/24) of the AlphaFold repository or execute commands described in [our script](https://github.com/huhlim/alphafold-multistate/blob/main/structure_prediction/conda_create.sh). 
+
+0. Prerequisite
+- [AlphaFold package](https://github.com/deepmind/alphafold)
+- Anaconda environment for AlphaFold
+- Activation state annotated GPCR100 databases
+
+1. Update [libconfig_alphafold.py](https://github.com/huhlim/alphafold-multistate/blob/main/structure_prediction/libconfig_alphafold.py)
+You need to update
+- Paths for executables: jackhmmer, hhblits, hhsearch, kalign
+- Paths for genetic databases: DOWNLOAD_DIR, {uniref90, mgnify, bfd, small_bfd, uniclust30, pdb70}_database_path, template_mmcif_dir, obsolete_pdbs_path
+- Paths for activation state annotated GPCR100 databases: gpcr100_active_db_path, gpcr100_inactive_db_path
+
+2. GPCR structure predictions
+We assumed that you activated an Anaconda environment that has all required library/package for running AlphaFold. 
+- Modeling GPCRs in a specific activation state (this study)
+```bash
+./structure_prediction/run.py ${FASTA_FILE} --preset study --state active    # for modeling in active state
+./structure_prediction/run.py ${FASTA_FILE} --preset study --state inactive  # for modeling in inactive state
+```
+- The original AlphaFold protocol
+```bash
+./structure_prediction/run.py ${FASTA_FILE} --preset original
+```
+- Other protocols for the ablation study described in the paper
+```bash
+# running the original AlphaFold protocol but using activation state-annotated GPCR databases
+./structure_prediction/run.py ${FASTA_FILE} --preset original --state active     # for modeling in active state
+./structure_prediction/run.py ${FASTA_FILE} --preset original --state inactive   # for modeling in inactive state
+
+# running AlphaFold using sequence and MSA-based features, without structure templates-based features
+./structure_prediction/run.py ${FASTA_FILE} --preset no_templ
+
+# running AlphaFold using sequence-based features only, without MSA and structure templates-based features
+./structure_prediction/run.py ${FASTA_FILE} --preset seqonly
+
+# running MODELLER
+./structure_prediction/run.py [FASTA file] --preset tbm
+```
+
