@@ -21,7 +21,7 @@ GPCR100.${state}_hhm.ff{data,index}
 GPCR100.${state}_cs219.ff{data,index}
 ```
 5. **Pre-built GPCR databases**  
-You can obtain state-annotated GPCR databases at [here](https://zenodo.org/deposit/5156185)
+You can obtain state-annotated GPCR databases at [here](https://zenodo.org/record/5156185)
 
 ## GPCR structure prediction using AlphaFold
 
