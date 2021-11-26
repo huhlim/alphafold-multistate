@@ -65,3 +65,5 @@ We assumed that you activated an Anaconda environment that has all required libr
 ./structure_prediction/run.py [FASTA file] --preset tbm
 ```
 
+## GPCR models in the active and inactive states
+We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. You can find the models at [here](https://zenodo.org/record/5156185).
