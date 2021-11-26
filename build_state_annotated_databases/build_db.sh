@@ -15,7 +15,7 @@ suffix=$(echo $PDB_LIST | awk -F. '{print $NF}')
 # download mmCIF files
 mkdir -p cif.$suffix
 cd cif.$suffix
-for pdb_id in $(cat $PDB_LIST);
+for pdb_id in $(cat ../$PDB_LIST);
 do
     pdb_id=$(echo $pdb_id | awk '{print tolower($0)}')
     wget -q https://files.rcsb.org/download/$pdb_id.cif

@@ -3,6 +3,7 @@
 import os
 import sys
 import argparse
+import subprocess as sp
 
 import libconfig_alphafold
 
@@ -97,7 +98,8 @@ def main():
         cmd.append("--pdb70_database_path=%s"%structure_db_path)
     if arg.seq_id_cutoff > 0.:
         cmd.append("--max_sequence_identity=%.1f"%arg.seq_id_cutoff)
-    print (cmd)
+    #print (cmd)
+    sp.call(cmd)
 
 if __name__ == '__main__':
     main()
