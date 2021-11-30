@@ -21,7 +21,7 @@ GPCR100.${state}_hhm.ff{data,index}
 GPCR100.${state}_cs219.ff{data,index}
 ```
 5. **Pre-built GPCR databases**  
-You can obtain state-annotated GPCR databases at [here](https://zenodo.org/record/5156185)
+You can obtain state-annotated GPCR databases at [here](https://zenodo.org/record/5745217)
 
 ## GPCR structure prediction using AlphaFold
 
@@ -66,7 +66,7 @@ We assumed that you activated an Anaconda environment that has all required libr
 ```
 
 ## GPCR models in the active and inactive states
-We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. You can find the models at [here](https://zenodo.org/record/5156185).
+We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. You can find the models at [here](https://zenodo.org/record/5745217).
 
 ## References
 [1] Heo, L. and Feig, M., Multi-State Modeling of G-protein Coupled Receptors at Experimental Accuracy, _bioRxiv_ (**2021**). [Link](https://www.biorxiv.org/content/10.1101/2021.11.26.470086v1)  
