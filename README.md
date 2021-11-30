@@ -65,9 +65,13 @@ We assumed that you activated an Anaconda environment that has all required libr
 ./structure_prediction/run.py [FASTA file] --preset tbm
 ```
 
+## Running the protocol on Colab
+A slightly modified protocol using ColabFold pipeline is implemented on [Colab](https://colab.research.google.com/github/huhlim/alphafold-multistate/blob/main/AlphaFold_multistate.ipynb). The main difference is the MSA generation step; the ColabFold-based protocol utilizes MMseqs2 for homologous sequence searches. 
+
 ## GPCR models in the active and inactive states
 We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. You can find the models at [here](https://zenodo.org/record/5745217).
 
 ## References
 [1] Heo, L. and Feig, M., Multi-State Modeling of G-protein Coupled Receptors at Experimental Accuracy, _bioRxiv_ (**2021**). [Link](https://www.biorxiv.org/content/10.1101/2021.11.26.470086v1)  
-[2] Jumper, J. _et al._, Highly accurate protein structure prediction with AlphaFold, _Nature_ (**2021**), 596, 583-589. [Link](https://www.nature.com/articles/s41586-021-03819-2)
+[2] Jumper, J. _et al._, Highly accurate protein structure prediction with AlphaFold, _Nature_ (**2021**), 596, 583-589. [Link](https://www.nature.com/articles/s41586-021-03819-2)  
+[3] Mirdita, M. _et al._, ColabFold - Making protein folding accessible to all, _bioRxiv_ (**2021**), 10.1101/2021.08.15.456425. [Link](https://www.biorxiv.org/content/10.1101/2021.08.15.456425v2)
