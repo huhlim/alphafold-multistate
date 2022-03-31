@@ -25,7 +25,7 @@ You can obtain state-annotated GPCR databases at [here](https://zenodo.org/recor
 
 ## GPCR structure prediction using AlphaFold
 
-The structure prediction scripts rely on [AlphaFold](https://github.com/deepmind/alphafold). We slightly modified to conduct ablation studies and model GPCR structures in a specific activation state. You should follow the setup procedure and download genetic databases and model parameters for AlphaFold. In contrast to the original AlphaFold, our scripts are based on non-Docker version and running on top of an Anaconda environment for AlphaFold. To create an environment for running AlphaFold, you may refer to [an issue page](https://github.com/deepmind/alphafold/issues/24) of the AlphaFold repository or execute commands described in [our script](https://github.com/huhlim/alphafold-multistate/blob/main/structure_prediction/conda_create.sh). 
+The structure prediction scripts rely on [AlphaFold](https://github.com/deepmind/alphafold). We slightly modified it to conduct ablation studies and model GPCR structures in a specific activation state. You should follow the setup procedure and download genetic databases and model parameters for AlphaFold. In contrast to the original AlphaFold, our scripts are based on a non-Docker version and run on top of an Anaconda environment for AlphaFold. To create an environment for running AlphaFold, you may refer to [an issue page](https://github.com/deepmind/alphafold/issues/24) of the AlphaFold repository or execute commands described in [our script](https://github.com/huhlim/alphafold-multistate/blob/main/structure_prediction/conda_create.sh). 
 
 0. Prerequisite
 - [AlphaFold package](https://github.com/deepmind/alphafold)
@@ -39,7 +39,7 @@ You need to update
 - Paths for activation state annotated GPCR100 databases: gpcr100_active_db_path, gpcr100_inactive_db_path
 
 2. GPCR structure predictions
-We assumed that you activated an Anaconda environment that has all required library/package for running AlphaFold. 
+We assumed that you activated an Anaconda environment that has all required libraries/packages for running AlphaFold. 
 - Modeling GPCRs in a specific activation state (this study)
 ```bash
 ./structure_prediction/run.py ${FASTA_FILE} --preset study --state active    # for modeling in active state
