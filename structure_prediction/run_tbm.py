@@ -17,10 +17,11 @@ import numpy as np
 from alphafold.common import protein, residue_constants
 from alphafold.data import pipeline
 from alphafold.data import templates
+from alphafold.data.tools import hhsearch
 
 import libmodeller as modeller
 
-import libconfig_alphafold
+import libconfig_af
 
 flags.DEFINE_string('fasta_path', None, 'Paths to FASTA files, each containing '
                   'one sequence. Paths should be separated by commas. '
@@ -29,32 +30,43 @@ flags.DEFINE_string('fasta_path', None, 'Paths to FASTA files, each containing '
                   'each prediction.')
 flags.DEFINE_string('output_dir', os.getcwd(), 'Path to a directory that will '
                     'store the results.')
-flags.DEFINE_list('model_names', libconfig_alphafold.model_names, 'Names of models to use.')
+flags.DEFINE_list('model_names', libconfig_af.model_names, 'Names of models to use.')
 
-flags.DEFINE_string('data_dir', libconfig_alphafold.data_dir, 'Path to directory of supporting data.')
+flags.DEFINE_string('data_dir', libconfig_af.data_dir, 'Path to directory of supporting data.')
 flags.DEFINE_integer("n_templates", 1, "number of templates")
 flags.DEFINE_integer("n_model", 8, "number of models to try")
-flags.DEFINE_string('jackhmmer_binary_path', libconfig_alphafold.jackhmmer_binary_path,
+flags.DEFINE_string('jackhmmer_binary_path', libconfig_af.jackhmmer_binary_path,
                     'Path to the JackHMMER executable.')
-flags.DEFINE_string('hhblits_binary_path', libconfig_alphafold.hhblits_binary_path, 
+flags.DEFINE_string('hhblits_binary_path', libconfig_af.hhblits_binary_path, 
                     'Path to the HHblits executable.')
-flags.DEFINE_string('hhsearch_binary_path', libconfig_alphafold.hhsearch_binary_path,
+flags.DEFINE_string('hhsearch_binary_path', libconfig_af.hhsearch_binary_path,
                     'Path to the HHsearch executable.')
-flags.DEFINE_string('kalign_binary_path', libconfig_alphafold.kalign_binary_path,
+flags.DEFINE_string('kalign_binary_path', libconfig_af.kalign_binary_path,
                     'Path to the Kalign executable.')
-flags.DEFINE_string('uniref90_database_path', libconfig_alphafold.uniref90_database_path, 
-                    'Path to the Uniref90 '
-                    'database for use by JackHMMER.')
-flags.DEFINE_string('pdb70_database_path', libconfig_alphafold.pdb70_database_path,
-                    'Path to the PDB70 '
-                    'database for use by HHsearch.')
-flags.DEFINE_string('template_mmcif_dir', libconfig_alphafold.template_mmcif_dir,
+
+flags.DEFINE_string('uniref90_database_path', libconfig_af.uniref90_database_path, 
+        'Path to the Uniref90 database for use by JackHMMER.')
+flags.DEFINE_string('mgnify_database_path', libconfig_af.mgnify_database_path, 
+        'Path to the MGnify database for use by JackHMMER.')
+flags.DEFINE_string('bfd_database_path', libconfig_af.bfd_database_path, 
+        'Path to the BFD database for use by HHblits.')
+flags.DEFINE_string('small_bfd_database_path', libconfig_af.small_bfd_database_path,
+        'Path to the small version of BFD used with the "reduced_dbs" preset.')
+flags.DEFINE_string('uniclust30_database_path', libconfig_af.uniclust30_database_path, 
+        'Path to the Uniclust30 database for use by HHblits.')
+flags.DEFINE_string('uniprot_database_path', libconfig_af.uniprot_database_path, 
+        'Path to the Uniprot database for use by JackHMMer.')
+flags.DEFINE_string('pdb70_database_path', libconfig_af.pdb70_database_path, 
+        'Path to the PDB70 database for use by HHsearch.')
+flags.DEFINE_string('pdb_seqres_database_path', libconfig_af.pdb_seqres_database_path, 
+        'Path to the PDB seqres database for use by hmmsearch.')
+flags.DEFINE_string('template_mmcif_dir', libconfig_af.template_mmcif_dir,
                     'Path to a directory with '
                     'template mmCIF structures, each named <pdb_id>.cif')
-flags.DEFINE_string('max_template_date', libconfig_alphafold.max_template_date, 
+flags.DEFINE_string('max_template_date', libconfig_af.max_template_date, 
                     'Maximum template release date '
                     'to consider. Important if folding historical test sets.')
-flags.DEFINE_string('obsolete_pdbs_path', libconfig_alphafold.obsolete_pdbs_path,
+flags.DEFINE_string('obsolete_pdbs_path', libconfig_af.obsolete_pdbs_path,
                     'Path to file containing a '
                     'mapping from obsolete PDB IDs to the PDB IDs of their '
                     'replacements.')
@@ -82,7 +94,8 @@ def write_template_pdb(seq, atom_positions, atom_mask):
             aatype=aatype, \
             atom_positions=atom_positions, \
             atom_mask=atom_mask, \
-            residue_index=np.arange(atom_positions.shape[0]).astype(np.int)+1, \
+            residue_index=np.arange(atom_positions.shape[0]).astype(int)+1, \
+            chain_index=np.zeros_like(aatype, dtype=int), \
             b_factors=np.zeros_like(atom_mask))
 
     res_1to3 = lambda r: residue_constants.restype_1to3.get(restypes[r], 'UNK')
@@ -115,7 +128,7 @@ def write_template_pdb(seq, atom_positions, atom_mask):
       residue_index_prev = residue_index[i]
       if aatype[i] > residue_constants.restype_num:
           continue
-      chain_id = protein.CHAIN_IDs[chain_index]
+      chain_id = protein.PDB_CHAIN_IDS[chain_index]
       res_name_3 = res_1to3(aatype[i])
       #
       for atom_name, pos, mask, b_factor in zip(
@@ -179,6 +192,7 @@ def predict_structure(
       feature_dict = data_pipeline.process(
           input_fasta_path=fasta_path,
           input_msa_path=msa_path,
+          input_pdb_path=None,
           msa_output_dir=msa_output_dir)
 
       # Write out features as a pickled dictionary.
@@ -217,7 +231,7 @@ def predict_structure(
     #
   os.chdir(output_dir)
   #
-  n_proc = min(n_model, 8)
+  n_proc = min(n_model, libconfig_af.N_PROC)
   pir_fn = pir_fn.split("/")[-1]
   try:
       modeller.build_model(pir_fn, '.', n_model, n_proc)
@@ -242,31 +256,36 @@ def main(argv):
   # Check for duplicate FASTA file names.
   fasta_name = pathlib.Path(FLAGS.fasta_path).stem
 
-  template_featurizer = templates.TemplateHitFeaturizer(
+  template_searcher = hhsearch.HHSearch(
+      binary_path=FLAGS.hhsearch_binary_path,
+      databases=[FLAGS.pdb70_database_path])
+  template_featurizer = templates.HhsearchHitFeaturizer(
       mmcif_dir=FLAGS.template_mmcif_dir,
       max_template_date=FLAGS.max_template_date,
       max_hits=FLAGS.n_templates,
       kalign_binary_path=FLAGS.kalign_binary_path,
       release_dates_path=None,
-      obsolete_pdbs_path=FLAGS.obsolete_pdbs_path, 
-      max_sequence_identity=FLAGS.max_sequence_identity,
-      )
+      obsolete_pdbs_path=FLAGS.obsolete_pdbs_path,
+      max_sequence_identity=FLAGS.max_sequence_identity)
 
+  # Input Conformation
+  conformation_info_extractor = None
   data_pipeline = pipeline.DataPipeline(
       jackhmmer_binary_path=FLAGS.jackhmmer_binary_path,
       hhblits_binary_path=FLAGS.hhblits_binary_path,
-      hhsearch_binary_path=FLAGS.hhsearch_binary_path,
       uniref90_database_path=FLAGS.uniref90_database_path,
-      mgnify_database_path="",
-      bfd_database_path="",
-      uniclust30_database_path="",
-      small_bfd_database_path="",
-      pdb70_database_path=FLAGS.pdb70_database_path,
+      mgnify_database_path=FLAGS.mgnify_database_path,
+      bfd_database_path=FLAGS.bfd_database_path,
+      uniclust30_database_path=FLAGS.uniclust30_database_path,
+      small_bfd_database_path=FLAGS.small_bfd_database_path,
+      template_searcher=template_searcher,
       template_featurizer=template_featurizer,
-      use_small_bfd=False,
+      template_conformation=conformation_info_extractor,
+      use_small_bfd=False, 
       use_msa=False,
-      is_oligomer=False,
-      )
+      use_precomputed_msas=True,
+      is_multimer=False,
+      n_cpu=libconfig_af.N_PROC)
 
   random_seed = FLAGS.random_seed
   if random_seed is None:

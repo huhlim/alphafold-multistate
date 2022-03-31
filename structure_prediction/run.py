@@ -5,7 +5,7 @@ import sys
 import argparse
 import subprocess as sp
 
-import libconfig_alphafold
+import libconfig_af
 
 def set_presets(arg):
     preset = arg.preset
@@ -63,16 +63,16 @@ def main():
     set_presets(arg)
 
     if arg.modeling_tool == 'alphafold':
-        EXEC = libconfig_alphafold.exec_run_alphafold
+        EXEC = libconfig_af.exec_run_alphafold
     elif arg.modeling_tool == 'modeller':
-        EXEC = libconfig_alphafold.exec_run_tbm
+        EXEC = libconfig_af.exec_run_tbm
 
     if arg.state == 'none':
-        structure_db_path = libconfig_alphafold.pdb70_database_path
+        structure_db_path = libconfig_af.pdb70_database_path
     elif arg.state == 'active':
-        structure_db_path = libconfig_alphafold.gpcr100_active_db_path
+        structure_db_path = libconfig_af.gpcr100_active_db_path
     elif arg.state == 'inactive':
-        structure_db_path = libconfig_alphafold.gpcr100_inactive_db_path
+        structure_db_path = libconfig_af.gpcr100_inactive_db_path
 
     if arg.seq_id_cutoff > 100.:
         sys.exit("ERROR: sequence identity cutoff should be <= 100%\n")

@@ -21,7 +21,9 @@ from typing import Sequence
 
 from absl import logging
 
+from alphafold.data import parsers
 from alphafold.data.tools import utils
+from libconfig_af import N_PROC
 # Internal import (7716).
 
 
@@ -55,9 +57,17 @@ class HHSearch:
         logging.error('Could not find HHsearch database %s', database_path)
         raise ValueError(f'Could not find HHsearch database {database_path}')
 
+  @property
+  def output_format(self) -> str:
+    return 'hhr'
+
+  @property
+  def input_format(self) -> str:
+    return 'a3m'
+
   def query(self, a3m: str) -> str:
     """Queries the database using HHsearch using a given a3m."""
-    with utils.tmpdir_manager(base_dir='/tmp') as query_tmp_dir:
+    with utils.tmpdir_manager() as query_tmp_dir:
       input_path = os.path.join(query_tmp_dir, 'query.a3m')
       hhr_path = os.path.join(query_tmp_dir, 'output.hhr')
       with open(input_path, 'w') as f:
@@ -70,7 +80,8 @@ class HHSearch:
       cmd = [self.binary_path,
              '-i', input_path,
              '-o', hhr_path,
-             '-maxseq', str(self.maxseq)
+             '-maxseq', str(self.maxseq),
+             '-cpu', str(N_PROC)
              ] + db_cmd
 
       logging.info('Launching subprocess "%s"', ' '.join(cmd))
@@ -89,3 +100,10 @@ class HHSearch:
       with open(hhr_path) as f:
         hhr = f.read()
     return hhr
+
+  def get_template_hits(self,
+                        output_string: str,
+                        input_sequence: str) -> Sequence[parsers.TemplateHit]:
+    """Gets parsed template hits from the raw string output by the tool."""
+    del input_sequence  # Used by hmmseach but not needed for hhsearch.
+    return parsers.parse_hhr(output_string)
