@@ -7,6 +7,7 @@ ENVNAME=af
 conda create --name $ENVNAME -y -c conda-forge -c nvidia \
     python=3.8.5 \
     openmm=7.5.1 \
+    mdtraj \
     cudatoolkit=$CUDA.3 \
     pdbfixer \
     pip \
