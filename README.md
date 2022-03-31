@@ -65,6 +65,15 @@ We assumed that you activated an Anaconda environment that has all required libr
 ./structure_prediction/run.py [FASTA file] --preset tbm
 ```
 
+- Sampling of intermediate conformations
+```bash
+./structure_prediction/interpolate.py --fasta_path=${FASTA_FILE} \
+                                      --pdb_init=${INACTIVE_MODEL},${ACTIVE_MODEL} \
+                                      --unk_pdb=True \
+                                      --interpolate_region=${TM_RESIDUES}
+```
+You need to generate both active and inactive state models first and provide them to the script. The option of "interpolate_region" is optional, but it may improve structure comparison between states. You can provide it like "19-51,56-87,92-127,136-167,183-223,376-413,418-443".
+
 ## Running the protocol on Colab
 A slightly modified protocol using ColabFold pipeline is implemented on [Colab](https://colab.research.google.com/github/huhlim/alphafold-multistate/blob/main/AlphaFold_multistate.ipynb). The main difference is the MSA generation step; the ColabFold-based protocol utilizes MMseqs2 for homologous sequence searches. 
 
