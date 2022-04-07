@@ -8,7 +8,7 @@ The list of GPCR structures with activation state annotations: [GPCRdb](https://
 The script takes a list of PDB IDs for a state, either active, inactive, or intermediate states. For example, [GPCR.Active](https://github.com/huhlim/alphafold-multistate/blob/main/build_state_annotated_databases/GPCR.Active), [GPCR.Inactive](https://github.com/huhlim/alphafold-multistate/blob/main/build_state_annotated_databases/GPCR.Inactive), and [GPCR.Intermediate](https://github.com/huhlim/alphafold-multistate/blob/main/build_state_annotated_databases/GPCR.Intermediate) are lists of active, inactive, and intermediate state GPCRs for this study, respectively. In addition, to select the _preferred_ chain among multiple chains of a PDB file, a list of PDB IDs with the _preferred_ chains is required. [Example](https://github.com/huhlim/alphafold-multistate/blob/main/build_state_annotated_databases/GPCR.chains)
 3. **Running the script**  
 The script is based on [the official guideline for building customized HHsuite databases](https://github.com/soedinglab/hh-suite/wiki#building-customized-databases).
-To run the script, [HHsuite](https://github.com/soedinglab/hh-suite) and [UniClust30 database](http://gwdu111.gwdg.de/~compbiol/uniclust/2020_06/) are required. Also, you need to modify [build_db.sh](https://github.com/huhlim/alphafold-multistate/blob/cc76e4cc08c121993a03599c62ae29b0cb38c106/build_state_annotated_databases/build_db.sh#L6) for the path of the UniClust30 database.   
+To run the script, [HHsuite](https://github.com/soedinglab/hh-suite) and [UniClust30 database](http://gwdu111.gwdg.de/~compbiol/uniclust/2020_06/) are required. Also, one needs to modify [build_db.sh](https://github.com/huhlim/alphafold-multistate/blob/cc76e4cc08c121993a03599c62ae29b0cb38c106/build_state_annotated_databases/build_db.sh#L6) to adjust the path of the UniClust30 database.   
 Example command:  
 ```
 ./build_db.sh GPCR.${state}
@@ -21,11 +21,11 @@ GPCR100.${state}_hhm.ff{data,index}
 GPCR100.${state}_cs219.ff{data,index}
 ```
 5. **Pre-built GPCR databases**  
-You can obtain state-annotated GPCR databases at [here](https://zenodo.org/record/5745217)
+State-annotated GPCR databases can be obtained at [here](https://zenodo.org/record/5745217)
 
 ## GPCR structure prediction using AlphaFold
 
-The structure prediction scripts rely on [AlphaFold](https://github.com/deepmind/alphafold). We slightly modified it to conduct ablation studies and model GPCR structures in a specific activation state. You should follow the setup procedure and download genetic databases and model parameters for AlphaFold. In contrast to the original AlphaFold, our scripts are based on a non-Docker version and run on top of an Anaconda environment for AlphaFold. To create an environment for running AlphaFold, you may refer to [an issue page](https://github.com/deepmind/alphafold/issues/24) of the AlphaFold repository or execute commands described in [our script](https://github.com/huhlim/alphafold-multistate/blob/main/structure_prediction/conda_create.sh). 
+The structure prediction scripts rely on [AlphaFold](https://github.com/deepmind/alphafold). We slightly modified it to conduct ablation studies and to model GPCR structures in a specific activation state. Follow the setup procedure and download genetic databases and model parameters for AlphaFold. In contrast to the original AlphaFold, our scripts are based on a non-Docker version and run on top of an Anaconda environment for AlphaFold. To create an environment for running AlphaFold, one may refer to [an issue page](https://github.com/deepmind/alphafold/issues/24) of the AlphaFold repository or execute commands described in [our script](https://github.com/huhlim/alphafold-multistate/blob/main/structure_prediction/conda_create.sh). 
 
 0. Prerequisite
 - [AlphaFold package](https://github.com/deepmind/alphafold)
@@ -33,13 +33,13 @@ The structure prediction scripts rely on [AlphaFold](https://github.com/deepmind
 - Activation state annotated GPCR100 databases
 
 1. Update [libconfig_alphafold.py](https://github.com/huhlim/alphafold-multistate/blob/main/structure_prediction/libconfig_alphafold.py)
-You need to update
+One needs to update
 - Paths for executables: jackhmmer, hhblits, hhsearch, kalign
 - Paths for genetic databases: DOWNLOAD_DIR, {uniref90, mgnify, bfd, small_bfd, uniclust30, pdb70}_database_path, template_mmcif_dir, obsolete_pdbs_path
 - Paths for activation state annotated GPCR100 databases: gpcr100_active_db_path, gpcr100_inactive_db_path
 
 2. GPCR structure predictions
-We assumed that you activated an Anaconda environment that has all required libraries/packages for running AlphaFold. 
+We assumed an activated Anaconda environment that has all required libraries/packages for running AlphaFold. 
 - Modeling GPCRs in a specific activation state (this study)
 ```bash
 ./structure_prediction/run.py ${FASTA_FILE} --preset study --state active    # for modeling in active state
@@ -49,7 +49,7 @@ We assumed that you activated an Anaconda environment that has all required libr
 ```bash
 ./structure_prediction/run.py ${FASTA_FILE} --preset original
 ```
-- Other protocols for the ablation study described in the paper
+- Other protocols for the ablation study as described in the paper
 ```bash
 # running the original AlphaFold protocol but using activation state-annotated GPCR databases
 ./structure_prediction/run.py ${FASTA_FILE} --preset original --state active     # for modeling in active state
@@ -72,13 +72,13 @@ We assumed that you activated an Anaconda environment that has all required libr
                                       --unk_pdb=True \
                                       --interpolate_region=${TM_RESIDUES}
 ```
-You need to generate both active and inactive state models first and provide them to the script. The option of "interpolate_region" is optional, but it may improve structure comparison between states. You can provide it like "19-51,56-87,92-127,136-167,183-223,376-413,418-443".
+Both active and inactive state models need to be generated first before providing them to the script. The option "interpolate_region" is optional, but it may improve structure comparison between states. An example input is as follows: "19-51,56-87,92-127,136-167,183-223,376-413,418-443".
 
 ## Running the protocol on Colab
 A slightly modified protocol using ColabFold pipeline is implemented on [Colab](https://colab.research.google.com/github/huhlim/alphafold-multistate/blob/main/AlphaFold_multistate.ipynb). The main difference is the MSA generation step; the ColabFold-based protocol utilizes MMseqs2 for homologous sequence searches. 
 
 ## GPCR models in the active and inactive states
-We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. You can find the models at [here](https://zenodo.org/record/5745217).
+We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. The models are available [here](https://zenodo.org/record/5745217).
 
 ## References
 [1] Heo, L. and Feig, M., Multi-State Modeling of G-protein Coupled Receptors at Experimental Accuracy, _bioRxiv_ (**2021**). [Link](https://www.biorxiv.org/content/10.1101/2021.11.26.470086v1)  
