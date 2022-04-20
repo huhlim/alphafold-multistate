@@ -21,7 +21,7 @@ GPCR100.${state}_hhm.ff{data,index}
 GPCR100.${state}_cs219.ff{data,index}
 ```
 5. **Pre-built GPCR databases**  
-State-annotated GPCR databases can be obtained at [here](https://zenodo.org/record/5745217)
+State-annotated GPCR databases can be obtained from our repositories on [Zenodo](https://zenodo.org/record/5745217) or [Google Drive](https://drive.google.com/drive/folders/1JYp-6LkElUgpiWIB8GroSI_z9rlVmr5o?usp=sharing).
 
 ## GPCR structure prediction using AlphaFold
 
@@ -78,7 +78,7 @@ Both active and inactive state models need to be generated first before providin
 A slightly modified protocol using ColabFold pipeline is implemented on [Colab](https://colab.research.google.com/github/huhlim/alphafold-multistate/blob/main/AlphaFold_multistate.ipynb). The main difference is the MSA generation step; the ColabFold-based protocol utilizes MMseqs2 for homologous sequence searches. 
 
 ## GPCR models in the active and inactive states
-We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. The models are available [here](https://zenodo.org/record/5745217).
+We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. The models are available via [Zenodo](https://zenodo.org/record/5745217) or [Google Drive](https://drive.google.com/drive/folders/1JYp-6LkElUgpiWIB8GroSI_z9rlVmr5o?usp=sharing).
 
 ## References
 [1] Heo, L. and Feig, M., Multi-State Modeling of G-protein Coupled Receptors at Experimental Accuracy, _bioRxiv_ (**2021**). [Link](https://www.biorxiv.org/content/10.1101/2021.11.26.470086v2)  
