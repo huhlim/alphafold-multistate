@@ -1,54 +1,3 @@
-
-import json
-import logging
-import math
-import random
-import sys
-import time
-import zipfile
-from argparse import ArgumentParser
-from pathlib import Path
-from typing import Any, Dict, Tuple, List, Union, Optional
-
-import haiku
-import importlib_metadata
-import numpy as np
-import pandas
-from jax.lib import xla_bridge
-from numpy import ndarray
-
-try:
-    import alphafold
-except ModuleNotFoundError:
-    raise RuntimeError(
-        "\n\nalphafold is not installed. Please run `pip install colabfold[alphafold]`\n"
-    )
-
-from alphafold.common import protein
-from alphafold.common.protein import Protein
-from alphafold.data import (
-    pipeline,
-    msa_pairing,
-    pipeline_multimer,
-    templates,
-    feature_processing,
-)
-from alphafold.data.tools import hhsearch
-from alphafold.model import model
-from colabfold.alphafold.models import load_models_and_params
-from colabfold.alphafold.msa import make_fixed_size
-from colabfold.citations import write_bibtex
-from colabfold.colabfold import run_mmseqs2, chain_break, plot_paes, plot_plddts
-from colabfold.plot import plot_msa
-from colabfold.download import download_alphafold_params, default_data_dir
-from colabfold.utils import (
-    setup_logging,
-    safe_filename,
-    NO_GPU_FOUND,
-    DEFAULT_API_SERVER,
-    ACCEPT_DEFAULT_TERMS,
-    get_commit,
-)
 from colabfold.batch import *
 
 logger = logging.getLogger(__name__)
@@ -82,6 +31,7 @@ def get_msa_and_templates(
     result_dir: Path,
     msa_mode: str,
     use_templates: bool,
+    custom_template_path: str,
     activation_state: str,
     pair_mode: str,
     host_url: str = DEFAULT_API_SERVER,
@@ -111,12 +61,19 @@ def get_msa_and_templates(
             use_templates=True,
             host_url=host_url,
         )
-        
+        if custom_template_path is not None:
+            raise NotImplementedError
+            template_paths = {}
+            for index in range(0, len(query_seqs_unique)):
+                template_paths[index] = custom_template_path
         for index in range(0, len(query_seqs_unique)):
             template_feature = mk_template(
                 a3m_lines_mmseqs2[index],
                 f"gpcr100/GPCR100.{activation_state}",
                 query_seqs_unique[index],
+            )
+            logger.info(
+                f"Sequence {index} found templates: {template_feature['template_domain_names']}"
             )
             template_features.append(template_feature)
     else:
@@ -145,7 +102,9 @@ def get_msa_and_templates(
     else:
         a3m_lines = None
 
-    if pair_mode == "paired" or pair_mode == "unpaired+paired":
+    if msa_mode != "single_sequence" and (
+        pair_mode == "paired" or pair_mode == "unpaired+paired"
+    ):
         # find paired a3m if not a homooligomers
         if len(query_seqs_unique) > 1:
             paired_a3m_lines = run_mmseqs2(
@@ -194,11 +153,12 @@ def run(
     is_complex: bool,
     model_type: str = "auto",
     msa_mode: str = "MMseqs2 (UniRef+Environmental)",
-    use_templates: bool = False,
     activation_state: str = "Inactive",
+    use_templates: bool = False,
+    custom_template_path: str = None,
     use_amber: bool = False,
     keep_existing_results: bool = True,
-    rank_mode: str = "auto",
+    rank_by: str = "auto",
     pair_mode: str = "unpaired+paired",
     data_dir: Union[str, Path] = default_data_dir,
     host_url: str = DEFAULT_API_SERVER,
@@ -206,10 +166,15 @@ def run(
     recompile_padding: float = 1.1,
     recompile_all_models: bool = False,
     zip_results: bool = False,
+    prediction_callback: Callable[[Any, Any, Any, Any], Any] = None,
+    save_single_representations: bool = False,
+    save_pair_representations: bool = False,
+    training: bool = False,
+    use_gpu_relax: bool = False,
+    stop_at_score_below: float = 0,
 ):
     version = importlib_metadata.version("colabfold")
     commit = get_commit()
-    print(commit)
     if commit:
         version += f" ({commit})"
 
@@ -219,12 +184,24 @@ def run(
     result_dir = Path(result_dir)
     result_dir.mkdir(exist_ok=True)
     model_type = set_model_type(is_complex, model_type)
-    if model_type == "AlphaFold2-multimer":
+
+    if model_type == "AlphaFold2-multimer-v1":
         model_extension = "_multimer"
+    elif model_type == "AlphaFold2-multimer-v2":
+        model_extension = "_multimer_v2"
     elif model_type == "AlphaFold2-ptm":
         model_extension = "_ptm"
     else:
         raise ValueError(f"Unknown model_type {model_type}")
+
+    if rank_by == "auto":
+        # score complexes by ptmscore and sequences by plddt
+        rank_by = "plddt" if not is_complex else "ptmscore"
+        rank_by = (
+            "multimer"
+            if is_complex and model_type.startswith("AlphaFold2-multimer")
+            else rank_by
+        )
 
     # Record the parameters of this run
     config = {
@@ -238,16 +215,19 @@ def run(
         "num_recycles": num_recycles,
         "model_order": model_order,
         "keep_existing_results": keep_existing_results,
-        "rank_mode": rank_mode,
+        "rank_by": rank_by,
         "pair_mode": pair_mode,
         "host_url": host_url,
         "stop_at_score": stop_at_score,
+        "stop_at_score_below": stop_at_score_below,
         "recompile_padding": recompile_padding,
         "recompile_all_models": recompile_all_models,
         "commit": get_commit(),
+        "is_training": training,
         "version": importlib_metadata.version("colabfold"),
     }
-    result_dir.joinpath("config.json").write_text(json.dumps(config, indent=4))
+    config_out_file = result_dir.joinpath("config.json")
+    config_out_file.write_text(json.dumps(config, indent=4))
     use_env = msa_mode == "MMseqs2 (UniRef+Environmental)"
     use_msa = (
         msa_mode == "MMseqs2 (UniRef only)"
@@ -258,6 +238,8 @@ def run(
         model_type, use_msa, use_env, use_templates, use_amber, result_dir
     )
 
+    save_representations = save_single_representations or save_pair_representations
+
     model_runner_and_params = load_models_and_params(
         num_models,
         use_templates,
@@ -266,7 +248,13 @@ def run(
         model_extension,
         data_dir,
         recompile_all_models,
+        stop_at_score=stop_at_score,
+        rank_by=rank_by,
+        return_representations=save_representations,
+        training=training,
     )
+    if custom_template_path is not None:
+        mk_hhsearch_db(custom_template_path)
 
     crop_len = 0
     for job_number, (raw_jobname, query_sequence, a3m_lines) in enumerate(queries):
@@ -313,6 +301,7 @@ def run(
                     result_dir,
                     msa_mode,
                     use_templates,
+                    custom_template_path,
                     activation_state,
                     pair_mode,
                     host_url,
@@ -359,45 +348,102 @@ def run(
                 model_type=model_type,
                 model_runner_and_params=model_runner_and_params,
                 do_relax=use_amber,
-                rank_by=rank_mode,
+                rank_by=rank_by,
                 stop_at_score=stop_at_score,
+                stop_at_score_below=stop_at_score_below,
+                prediction_callback=prediction_callback,
+                use_gpu_relax=use_gpu_relax,
             )
         except RuntimeError as e:
             # This normally happens on OOM. TODO: Filter for the specific OOM error message
             logger.error(f"Could not predict {jobname}. Not Enough GPU memory? {e}")
             continue
 
+        # Write representations if needed
+
+        representation_files = []
+
+        if save_representations:
+            for i, key in enumerate(model_rank):
+                out = outs[key]
+                model_id = i + 1
+                model_name = out["model_name"]
+                representations = out["representations"]
+
+                if save_single_representations:
+                    single_representation = np.asarray(representations["single"])
+                    single_filename = result_dir.joinpath(
+                        f"{jobname}_single_repr_{model_id}_{model_name}"
+                    )
+                    np.save(single_filename, single_representation)
+
+                if save_pair_representations:
+                    pair_representation = np.asarray(representations["pair"])
+                    pair_filename = result_dir.joinpath(
+                        f"{jobname}_pair_repr_{model_id}_{model_name}"
+                    )
+                    np.save(pair_filename, pair_representation)
+
+        # Write alphafold-db format (PAE)
+        alphafold_pae_file = result_dir.joinpath(
+            jobname + "_predicted_aligned_error_v1.json"
+        )
+        alphafold_pae_file.write_text(get_pae_json(outs[0]["pae"], outs[0]["max_pae"]))
+        num_alignment = (
+            int(input_features["num_alignments"])
+            if model_type.startswith("AlphaFold2-multimer")
+            else input_features["num_alignments"][0]
+        )
         msa_plot = plot_msa(
-            input_features["msa"],
+            input_features["msa"][0:num_alignment],
             input_features["msa"][0],
             query_sequence_len_array,
             query_sequence_len,
         )
-        msa_plot.savefig(str(result_dir.joinpath(jobname + "_coverage.png")))
+        coverage_png = result_dir.joinpath(jobname + "_coverage.png")
+        msa_plot.savefig(str(coverage_png))
         msa_plot.close()
         paes_plot = plot_paes(
             [outs[k]["pae"] for k in model_rank], Ls=query_sequence_len_array, dpi=200
         )
-        paes_plot.savefig(str(result_dir.joinpath(jobname + "_PAE.png")))
+        pae_png = result_dir.joinpath(jobname + "_PAE.png")
+        paes_plot.savefig(str(pae_png))
         paes_plot.close()
         plddt_plot = plot_plddts(
             [outs[k]["plddt"] for k in model_rank], Ls=query_sequence_len_array, dpi=200
         )
-        plddt_plot.savefig(str(result_dir.joinpath(jobname + "_plddt.png")))
+        plddt_png = result_dir.joinpath(jobname + "_plddt.png")
+        plddt_plot.savefig(str(plddt_png))
         plddt_plot.close()
+        result_files = [
+            bibtex_file,
+            config_out_file,
+            alphafold_pae_file,
+            result_dir.joinpath(jobname + ".a3m"),
+            pae_png,
+            coverage_png,
+            plddt_png,
+            *representation_files,
+        ]
+        for i, key in enumerate(model_rank):
+            result_files.append(
+                result_dir.joinpath(
+                    f"{jobname}_unrelaxed_rank_{i + 1}_{outs[key]['model_name']}.pdb"
+                )
+            )
+            result_files.append(
+                result_dir.joinpath(
+                    f"{jobname}_unrelaxed_rank_{i + 1}_{outs[key]['model_name']}_scores.json"
+                )
+            )
+            if use_amber:
+                result_files.append(
+                    result_dir.joinpath(
+                        f"{jobname}_relaxed_rank_{i + 1}_{outs[key]['model_name']}.pdb"
+                    )
+                )
 
         if zip_results:
-            result_files = (
-                [
-                    bibtex_file,
-                    result_dir.joinpath("config.json"),
-                    result_dir.joinpath(jobname + ".a3m"),
-                ]
-                + sorted(result_dir.glob(jobname + "*.png"))
-                + sorted(result_dir.glob(f"{jobname}_unrelaxed_*.pdb"))
-                + sorted(result_dir.glob(f"{jobname}_relaxed_*.pdb"))
-            )
-
             with zipfile.ZipFile(result_zip, "w") as result_zip:
                 for file in result_files:
                     result_zip.write(file, arcname=file.name)
