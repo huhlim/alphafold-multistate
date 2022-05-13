@@ -81,6 +81,6 @@ A slightly modified protocol using ColabFold pipeline is implemented on [Colab](
 We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. The models are available via [Zenodo](https://zenodo.org/record/5745217) or [Google Drive](https://drive.google.com/drive/folders/1JYp-6LkElUgpiWIB8GroSI_z9rlVmr5o?usp=sharing).
 
 ## References
-[1] Heo, L. and Feig, M., Multi-State Modeling of G-protein Coupled Receptors at Experimental Accuracy, _bioRxiv_ (**2021**). [Link](https://www.biorxiv.org/content/10.1101/2021.11.26.470086v2)  
+[1] Heo, L. and Feig, M., Multi-State Modeling of G-protein Coupled Receptors at Experimental Accuracy, _Proteins (**2022**), doi:10.1002/prot.26382. [Link](https://onlinelibrary.wiley.com/doi/10.1002/prot.26382)  
 [2] Jumper, J. _et al._, Highly accurate protein structure prediction with AlphaFold, _Nature_ (**2021**), 596, 583-589. [Link](https://www.nature.com/articles/s41586-021-03819-2)  
 [3] Mirdita, M. _et al._, ColabFold - Making protein folding accessible to all, _bioRxiv_ (**2021**), 10.1101/2021.08.15.456425. [Link](https://www.biorxiv.org/content/10.1101/2021.08.15.456425v3)
