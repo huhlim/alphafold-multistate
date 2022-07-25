@@ -172,13 +172,13 @@ def run(
     training: bool = False,
     use_gpu_relax: bool = False,
     stop_at_score_below: float = 0,
+    dpi: int = 200,
+    max_msa: str = None,
 ):
-    version = importlib_metadata.version("colabfold")
-    commit = get_commit()
-    if commit:
-        version += f" ({commit})"
-
-    logger.info(f"Running colabfold {version}")
+    from alphafold.notebooks.notebook_utils import get_pae_json
+    from colabfold.alphafold.models import load_models_and_params
+    from colabfold.colabfold import plot_paes, plot_plddts
+    from colabfold.plot import plot_msa
 
     data_dir = Path(data_dir)
     result_dir = Path(result_dir)
@@ -252,6 +252,7 @@ def run(
         rank_by=rank_by,
         return_representations=save_representations,
         training=training,
+        max_msa=max_msa,
     )
     if custom_template_path is not None:
         mk_hhsearch_db(custom_template_path)
