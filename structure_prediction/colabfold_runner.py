@@ -168,7 +168,7 @@ def run(
     recompile_padding: float = 1.1,
     recompile_all_models: bool = False,
     zip_results: bool = False,
-    prediction_callback: Callable[[Any, Any, Any, Any], Any] = None,
+    prediction_callback: Callable[[Any, Any, Any, Any, Any], Any] = None,
     save_single_representations: bool = False,
     save_pair_representations: bool = False,
     training: bool = False,
