@@ -38,6 +38,8 @@ def get_msa_and_templates(
 ) -> Tuple[
     Optional[List[str]], Optional[List[str]], List[str], List[int], List[Dict[str, Any]]
 ]:
+    from colabfold.colabfold import run_mmseqs2
+
     use_env = msa_mode == "MMseqs2 (UniRef+Environmental)"
     # remove duplicates before searching
     query_sequences = (
@@ -244,6 +246,7 @@ def run(
         num_models,
         use_templates,
         num_recycles,
+        1,
         model_order,
         model_extension,
         data_dir,
@@ -315,7 +318,7 @@ def run(
             logger.exception(f"Could not get MSA/templates for {jobname}: {e}")
             continue
         try:
-            input_features = generate_input_feature(
+            input_features, domain_names = generate_input_feature(
                 query_seqs_unique,
                 query_seqs_cardinality,
                 unpaired_msa,
@@ -426,6 +429,12 @@ def run(
             plddt_png,
             *representation_files,
         ]
+        if use_templates:
+            templates_file = result_dir.joinpath(
+                jobname + "_template_domain_names.json"
+            )
+            templates_file.write_text(json.dumps(domain_names))
+            result_files.append(templates_file)
         for i, key in enumerate(model_rank):
             result_files.append(
                 result_dir.joinpath(
