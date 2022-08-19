@@ -3,10 +3,10 @@ from colabfold.batch import *
 logger = logging.getLogger(__name__)
 
 def mk_template(
-    a3m_lines: str, template_path: str, query_sequence: str
+    a3m_lines: str, template_path: str, mmcif_path: str, query_sequence: str
 ) -> Dict[str, Any]:
     template_featurizer = templates.HhsearchHitFeaturizer(
-        mmcif_dir="gpcr100/mmcif",
+        mmcif_dir=mmcif_path,
         max_template_date="2100-01-01",
         max_hits=20,
         kalign_binary_path="kalign",
@@ -27,12 +27,13 @@ def mk_template(
 
 def get_msa_and_templates(
     jobname: str,
+    protein_family: str,
     query_sequences: Union[str, List[str]],
     result_dir: Path,
     msa_mode: str,
     use_templates: bool,
     custom_template_path: str,
-    activation_state: str,
+    conformational_state: str,
     pair_mode: str,
     host_url: str = DEFAULT_API_SERVER,
 ) -> Tuple[
@@ -56,22 +57,28 @@ def get_msa_and_templates(
 
     template_features = []
     if use_templates:
-        a3m_lines_mmseqs2, template_paths = run_mmseqs2(
+        a3m_lines_mmseqs2 = run_mmseqs2(
             query_seqs_unique,
             str(result_dir.joinpath(jobname)),
             use_env,
-            use_templates=True,
+            # use_templates=True,
+            use_templates=False,
             host_url=host_url,
         )
+
+        if protein_family == "GPCR":
+            mmcif_path = "gpcr100/mmcif"
+            template_path = f"gpcr100/GPCR100.{conformational_state}"
+        elif protein_family == "Kinase":
+            mmcif_path = "kinase100/cif"
+            template_path = f"kinase100/kinase100.{conformational_state}"
+
         if custom_template_path is not None:
             raise NotImplementedError
-            template_paths = {}
-            for index in range(0, len(query_seqs_unique)):
-                template_paths[index] = custom_template_path
         for index in range(0, len(query_seqs_unique)):
             template_feature = mk_template(
                 a3m_lines_mmseqs2[index],
-                f"gpcr100/GPCR100.{activation_state}",
+                template_path, mmcif_path,
                 query_seqs_unique[index],
             )
             logger.info(
@@ -155,7 +162,8 @@ def run(
     is_complex: bool,
     model_type: str = "auto",
     msa_mode: str = "MMseqs2 (UniRef+Environmental)",
-    activation_state: str = "Inactive",
+    protein_family: str = "GPCR",
+    conformational_state: str = "Inactive",
     use_templates: bool = False,
     custom_template_path: str = None,
     use_amber: bool = False,
@@ -209,7 +217,8 @@ def run(
     config = {
         "num_queries": len(queries),
         "use_templates": use_templates,
-        "activation_state": activation_state,
+        "protein_family": protein_family,
+        "conformational_state": conformational_state,
         "use_amber": use_amber,
         "msa_mode": msa_mode,
         "model_type": model_type,
@@ -301,12 +310,13 @@ def run(
                     template_features,
                 ) = get_msa_and_templates(
                     jobname,
+                    protein_family,
                     query_sequence,
                     result_dir,
                     msa_mode,
                     use_templates,
                     custom_template_path,
-                    activation_state,
+                    conformational_state,   # TODO
                     pair_mode,
                     host_url,
                 )
