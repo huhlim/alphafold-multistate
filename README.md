@@ -83,4 +83,4 @@ We have modeled non-olfactory human GPCRs in the active and inactive states usin
 ## References
 [1] Heo, L. and Feig, M., Multi-State Modeling of G-protein Coupled Receptors at Experimental Accuracy, _Proteins_ (**2022**), doi:10.1002/prot.26382. [Link](https://onlinelibrary.wiley.com/doi/10.1002/prot.26382)  
 [2] Jumper, J. _et al._, Highly accurate protein structure prediction with AlphaFold, _Nature_ (**2021**), 596, 583-589. [Link](https://www.nature.com/articles/s41586-021-03819-2)  
-[3] Mirdita, M. _et al._, ColabFold - Making protein folding accessible to all, _bioRxiv_ (**2021**), 10.1101/2021.08.15.456425. [Link](https://www.biorxiv.org/content/10.1101/2021.08.15.456425v3)
+[3] Mirdita, M. _et al._, ColabFold - Making protein folding accessible to all, _Nature Methods_ (**2022**), 19, 679-682. [Link](https://www.nature.com/articles/s41592-022-01488-1)
