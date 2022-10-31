@@ -32,7 +32,7 @@ restype_3to1 = {
 }
 
 # script is from ColabFold
-def make_hhsearch_db(template_dir: pathlib.Path):
+def make_hhsearch_db(template_dir: pathlib.Path, template_s):
     # clear the dir
     for fn in template_dir.glob("pdb70_*"):
         os.remove(fn)
@@ -46,7 +46,7 @@ def make_hhsearch_db(template_dir: pathlib.Path):
     index_offset = 0
     cif_fn_s = template_dir.glob("*.cif")
     for cif_fn in cif_fn_s:
-        name = cif_fn.stem
+        name = cif_fn.stem.lower()
         print(name)
         parser = MMCIFParser(QUIET=True)
         with open(cif_fn) as fp:
@@ -64,8 +64,13 @@ def make_hhsearch_db(template_dir: pathlib.Path):
                     continue
                 seq.append(restype_3to1.get(residue.resname, "X"))
             seq = "".join(seq)
+            if len(seq) < 10:
+                continue
             #
             id = f"{name}_{chain.id}"
+            if template_s is not None and id not in template_s:
+                continue
+            #
             a3m_str = f">{id}\n{seq}\n\0"
             a3m_str_len = len(a3m_str)
             a3m_ffdata.write(a3m_str)
@@ -76,13 +81,28 @@ def make_hhsearch_db(template_dir: pathlib.Path):
             index_offset += a3m_str_len
 
 
+def read_templates(fn):
+    template_s = []
+    with open(fn) as fp:
+        for line in fp:
+            if not line.startswith("#"):
+                pdb_id, chain_id = line.strip().split("_")
+                template_s.append(f"{pdb_id.lower()}_{chain_id}")
+    return template_s
+
+
 def main():
     if len(sys.argv) == 1:
-        sys.stderr.write(f"usage: {__file__} [TEMPLATE DIRECTORY]\n")
+        sys.stderr.write(f"usage: {__file__} [TEMPLATE DIRECTORY] (TEMPLATE LIST: optional)\n")
         return
     #
     template_dir = pathlib.Path(sys.argv[1])
-    make_hhsearch_db(template_dir)
+    if len(sys.argv) > 2:
+        template_s = read_templates(sys.argv[2])
+    else:
+        template_s = None
+    #
+    make_hhsearch_db(template_dir, template_s)
 
 
 if __name__ == "__main__":

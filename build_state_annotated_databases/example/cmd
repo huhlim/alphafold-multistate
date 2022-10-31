@@ -1,0 +1,8 @@
+# to build a custom database with ALL chains in the mmCIF files
+../make_hhsearch_db.py active_db
+
+# to specify PDB IDs and chains ID, you may provide an additional input file
+#  the input file should have a list of PDB ID + Chain IDs 
+#  in the format of ${pdb_id}_${chain_id}
+#  
+../make_hhsearch_db.py active_db.with_input GPCR.Active
