@@ -2,6 +2,7 @@ from colabfold.batch import *
 
 logger = logging.getLogger(__name__)
 
+
 def mk_template(
     a3m_lines: str, template_path: str, mmcif_path: str, query_sequence: str
 ) -> Dict[str, Any]:
@@ -14,9 +15,7 @@ def mk_template(
         obsolete_pdbs_path=None,
     )
 
-    hhsearch_pdb70_runner = hhsearch.HHSearch(
-        binary_path="hhsearch", databases=[template_path]
-    )
+    hhsearch_pdb70_runner = hhsearch.HHSearch(binary_path="hhsearch", databases=[template_path])
 
     hhsearch_result = hhsearch_pdb70_runner.query(a3m_lines)
     hhsearch_hits = pipeline.parsers.parse_hhr(hhsearch_result)
@@ -24,6 +23,7 @@ def mk_template(
         query_sequence=query_sequence, hits=hhsearch_hits
     )
     return dict(templates_result.features)
+
 
 def get_msa_and_templates(
     jobname: str,
@@ -36,16 +36,12 @@ def get_msa_and_templates(
     conformational_state: str,
     pair_mode: str,
     host_url: str = DEFAULT_API_SERVER,
-) -> Tuple[
-    Optional[List[str]], Optional[List[str]], List[str], List[int], List[Dict[str, Any]]
-]:
+) -> Tuple[Optional[List[str]], Optional[List[str]], List[str], List[int], List[Dict[str, Any]]]:
     from colabfold.colabfold import run_mmseqs2
 
     use_env = msa_mode == "MMseqs2 (UniRef+Environmental)"
     # remove duplicates before searching
-    query_sequences = (
-        [query_sequences] if isinstance(query_sequences, str) else query_sequences
-    )
+    query_sequences = [query_sequences] if isinstance(query_sequences, str) else query_sequences
     query_seqs_unique = []
     for x in query_sequences:
         if x not in query_seqs_unique:
@@ -78,7 +74,8 @@ def get_msa_and_templates(
         for index in range(0, len(query_seqs_unique)):
             template_feature = mk_template(
                 a3m_lines_mmseqs2[index],
-                template_path, mmcif_path,
+                template_path,
+                mmcif_path,
                 query_seqs_unique[index],
             )
             logger.info(
@@ -111,9 +108,7 @@ def get_msa_and_templates(
     else:
         a3m_lines = None
 
-    if msa_mode != "single_sequence" and (
-        pair_mode == "paired" or pair_mode == "unpaired+paired"
-    ):
+    if msa_mode != "single_sequence" and (pair_mode == "paired" or pair_mode == "unpaired+paired"):
         # find paired a3m if not a homooligomers
         if len(query_seqs_unique) > 1:
             paired_a3m_lines = run_mmseqs2(
@@ -128,9 +123,7 @@ def get_msa_and_templates(
             num = 101
             paired_a3m_lines = []
             for i in range(0, query_seqs_cardinality[0]):
-                paired_a3m_lines.append(
-                    ">" + str(num + i) + "\n" + query_seqs_unique[0] + "\n"
-                )
+                paired_a3m_lines.append(">" + str(num + i) + "\n" + query_seqs_unique[0] + "\n")
     else:
         paired_a3m_lines = None
 
@@ -142,16 +135,18 @@ def get_msa_and_templates(
         template_features,
     )
 
+
 def remove_msa_for_template_aligned_regions(feature_dict):
-    mask = np.zeros(feature_dict['seq_length'][0], dtype=bool)
-    for templ in feature_dict['template_sequence']:
-        for i,aa in enumerate(templ.decode("utf-8")):
-            if aa != '-':
+    mask = np.zeros(feature_dict["seq_length"][0], dtype=bool)
+    for templ in feature_dict["template_sequence"]:
+        for i, aa in enumerate(templ.decode("utf-8")):
+            if aa != "-":
                 mask[i] = True
     #
-    feature_dict['deletion_matrix_int'][:,mask] = 0
-    feature_dict['msa'][:,mask] = 21
+    feature_dict["deletion_matrix_int"][:, mask] = 0
+    feature_dict["msa"][:, mask] = 21
     return feature_dict
+
 
 def run(
     queries: List[Tuple[str, Union[str, List[str]], Optional[List[str]]]],
@@ -193,24 +188,15 @@ def run(
     data_dir = Path(data_dir)
     result_dir = Path(result_dir)
     result_dir.mkdir(exist_ok=True)
-    model_type = set_model_type(is_complex, model_type)
 
-    if model_type == "AlphaFold2-multimer-v1":
-        model_extension = "_multimer"
-    elif model_type == "AlphaFold2-multimer-v2":
-        model_extension = "_multimer_v2"
-    elif model_type == "AlphaFold2-ptm":
-        model_extension = "_ptm"
-    else:
-        raise ValueError(f"Unknown model_type {model_type}")
+    model_type = "alphafold2_ptm"
+    model_suffix = "_ptm"
 
     if rank_by == "auto":
         # score complexes by ptmscore and sequences by plddt
         rank_by = "plddt" if not is_complex else "ptmscore"
         rank_by = (
-            "multimer"
-            if is_complex and model_type.startswith("AlphaFold2-multimer")
-            else rank_by
+            "multimer" if is_complex and model_type.startswith("AlphaFold2-multimer") else rank_by
         )
 
     # Record the parameters of this run
@@ -240,31 +226,37 @@ def run(
     config_out_file = result_dir.joinpath("config.json")
     config_out_file.write_text(json.dumps(config, indent=4))
     use_env = msa_mode == "MMseqs2 (UniRef+Environmental)"
-    use_msa = (
-        msa_mode == "MMseqs2 (UniRef only)"
-        or msa_mode == "MMseqs2 (UniRef+Environmental)"
-    )
+    use_msa = msa_mode == "MMseqs2 (UniRef only)" or msa_mode == "MMseqs2 (UniRef+Environmental)"
 
-    bibtex_file = write_bibtex(
-        model_type, use_msa, use_env, use_templates, use_amber, result_dir
-    )
+    bibtex_file = write_bibtex(model_type, use_msa, use_env, use_templates, use_amber, result_dir)
 
     save_representations = save_single_representations or save_pair_representations
 
     model_runner_and_params = load_models_and_params(
-        num_models,
-        use_templates,
-        num_recycles,
-        1,
-        model_order,
-        model_extension,
-        data_dir,
-        recompile_all_models,
+        #     num_models,
+        #     use_templates,
+        #     num_recycles,
+        #     1,
+        #     model_order,
+        #     model_extension,
+        #     data_dir,
+        #     recompile_all_models,
+        #     stop_at_score=stop_at_score,
+        #     rank_by=rank_by,
+        #     return_representations=save_representations,
+        #     training=training,
+        #     max_msa=max_msa,
+        # )
+        num_models=num_models,
+        use_templates=use_templates,
+        num_recycles=num_recycles,
+        num_ensemble=1,
+        model_order=model_order,
+        model_suffix=model_suffix,
+        data_dir=data_dir,
         stop_at_score=stop_at_score,
         rank_by=rank_by,
-        return_representations=save_representations,
-        training=training,
-        max_msa=max_msa,
+        use_dropout=training,
     )
     if custom_template_path is not None:
         mk_hhsearch_db(custom_template_path)
@@ -316,13 +308,11 @@ def run(
                     msa_mode,
                     use_templates,
                     custom_template_path,
-                    conformational_state,   # TODO
+                    conformational_state,  # TODO
                     pair_mode,
                     host_url,
                 )
-            msa = msa_to_str(
-                unpaired_msa, paired_msa, query_seqs_unique, query_seqs_cardinality
-            )
+            msa = msa_to_str(unpaired_msa, paired_msa, query_seqs_unique, query_seqs_cardinality)
             result_dir.joinpath(jobname + ".a3m").write_text(msa)
         except Exception as e:
             logger.exception(f"Could not get MSA/templates for {jobname}: {e}")
@@ -399,9 +389,7 @@ def run(
                     np.save(pair_filename, pair_representation)
 
         # Write alphafold-db format (PAE)
-        alphafold_pae_file = result_dir.joinpath(
-            jobname + "_predicted_aligned_error_v1.json"
-        )
+        alphafold_pae_file = result_dir.joinpath(jobname + "_predicted_aligned_error_v1.json")
         alphafold_pae_file.write_text(get_pae_json(outs[0]["pae"], outs[0]["max_pae"]))
         num_alignment = (
             int(input_features["num_alignments"])
@@ -440,9 +428,7 @@ def run(
             *representation_files,
         ]
         if use_templates:
-            templates_file = result_dir.joinpath(
-                jobname + "_template_domain_names.json"
-            )
+            templates_file = result_dir.joinpath(jobname + "_template_domain_names.json")
             templates_file.write_text(json.dumps(domain_names))
             result_files.append(templates_file)
         for i, key in enumerate(model_rank):
