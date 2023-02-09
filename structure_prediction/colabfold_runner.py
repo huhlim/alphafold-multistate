@@ -387,6 +387,7 @@ def run(
                 is_complex,
                 model_type,
             )
+            remove_msa_for_template_aligned_regions(feature_dict)
 
             # to allow display of MSA info during colab/chimera run (thanks tomgoddard)
             if feature_dict_callback is not None:
