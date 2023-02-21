@@ -232,6 +232,8 @@ def run(
         model_suffix = "_multimer_v3"
     elif model_type == "alphafold2_ptm":
         model_suffix = "_ptm"
+    elif model_type == "alphafold2":
+        model_suffix = ""
     else:
         raise ValueError(f"Unknown model_type {model_type}")
 
@@ -260,6 +262,46 @@ def run(
     # decide how to rank outputs
     if rank_by == "auto":
         rank_by = "multimer" if is_complex else "plddt"
+    if "ptm" not in model_type and "multimer" not in model_type:
+        rank_by = "plddt"
+
+    # get max length
+    max_len = 0
+    max_num = 0
+    for _, query_sequence, _ in queries:
+        N = 1 if isinstance(query_sequence, str) else len(query_sequence)
+        L = len("".join(query_sequence))
+        if L > max_len:
+            max_len = L
+        if N > max_num:
+            max_num = N
+
+    # get max sequences
+    # 512 5120 = alphafold_ptm (models 1,3,4)
+    # 512 1024 = alphafold_ptm (models 2,5)
+    # 508 2048 = alphafold-multimer_v3 (models 1,2,3)
+    # 508 1152 = alphafold-multimer_v3 (models 4,5)
+    # 252 1152 = alphafold-multimer_v[1,2]
+
+    set_if = lambda x, y: y if x is None else x
+    if model_type in ["alphafold2_multimer_v1", "alphafold2_multimer_v2"]:
+        (max_seq, max_extra_seq) = (set_if(max_seq, 252), set_if(max_extra_seq, 1152))
+    elif model_type == "alphafold2_multimer_v3":
+        (max_seq, max_extra_seq) = (set_if(max_seq, 508), set_if(max_extra_seq, 2048))
+    else:
+        (max_seq, max_extra_seq) = (set_if(max_seq, 512), set_if(max_extra_seq, 5120))
+
+    if msa_mode == "single_sequence":
+        num_seqs = 1
+        if is_complex and "multimer" not in model_type:
+            num_seqs += max_num
+        if use_templates:
+            num_seqs += 4
+        max_seq = min(num_seqs, max_seq)
+        max_extra_seq = max(min(num_seqs - max_seq, max_extra_seq), 1)
+
+    # sort model order
+    model_order.sort()
 
     # Record the parameters of this run
     config = {
@@ -386,6 +428,7 @@ def run(
                 template_features,
                 is_complex,
                 model_type,
+                max_seq=max_seq,
             )
             remove_msa_for_template_aligned_regions(feature_dict)
 
@@ -420,40 +463,13 @@ def run(
                 # if one job input adjust max settings
                 if len(queries) == 1 or msa_mode == "single_sequence":
                     # get number of sequences
-                    if msa_mode == "single_sequence":
-                        num_seqs = 1
-                        if "ptm" in model_type and is_complex:
-                            num_seqs += len(query_sequence_len_array)
+                    if "msa_mask" in feature_dict:
+                        num_seqs = int(sum(feature_dict["msa_mask"].max(-1) == 1))
                     else:
-                        if "msa_mask" in feature_dict:
-                            num_seqs = int(sum(feature_dict["msa_mask"].max(-1) == 1))
-                        else:
-                            num_seqs = int(len(feature_dict["msa"]))
+                        num_seqs = int(len(feature_dict["msa"]))
 
-                    # get max settings
-                    # 512 5120  = alphafold (models 1,3,4)
-                    # 512 1024  = alphafold (models 2,5)
-                    # 508 2048  = alphafold-multimer (v3, models 1,2,3)
-                    # 508 1152  = alphafold-multimer (v3, models 4,5)
-                    # 252 1152  = alphafold-multimer (v1, v2)
-                    set_if = lambda x, y: y if x is None else x
-                    if model_type in ["alphafold2_multimer_v1", "alphafold2_multimer_v2"]:
-                        (max_seq, max_extra_seq) = (
-                            set_if(max_seq, 252),
-                            set_if(max_extra_seq, 1152),
-                        )
-                    elif model_type == "alphafold2_multimer_v3":
-                        (max_seq, max_extra_seq) = (
-                            set_if(max_seq, 508),
-                            set_if(max_extra_seq, 2048),
-                        )
-                    else:
-                        (max_seq, max_extra_seq) = (
-                            set_if(max_seq, 512),
-                            set_if(max_extra_seq, 5120),
-                        )
-                        if use_templates:
-                            num_seqs = num_seqs + 4
+                    if use_templates:
+                        num_seqs += 4
 
                     # adjust max settings
                     max_seq = min(num_seqs, max_seq)
@@ -477,6 +493,7 @@ def run(
                     recycle_early_stop_tolerance=recycle_early_stop_tolerance,
                     use_fuse=use_fuse,
                     use_bfloat16=use_bfloat16,
+                    save_all=save_all,
                 )
                 first_job = False
 
