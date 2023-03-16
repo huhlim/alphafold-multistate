@@ -2,7 +2,7 @@
 
 CUDA=11.5
 
-ENVNAME=af.test
+ENVNAME=af
 
 conda create --name $ENVNAME -y -c conda-forge -c nvidia -c bioconda\
     python=3.8 \
@@ -42,3 +42,7 @@ do
     binary_path=$(which $binary)
     echo "${binary}_binary_path = \"$binary_path\""
 done
+
+# IF you want to use ColabFold interface, uncomment the following and install ColabFold
+# pip install --no-warn-conflicts -q "colabfold[alphafold-minus-jax] @ git+https://github.com/sokrypton/ColabFold@v1.5.2"
+
