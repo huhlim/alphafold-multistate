@@ -45,6 +45,13 @@ We assumed an activated Anaconda environment that has all required libraries/pac
 ./structure_prediction/run.py ${FASTA_FILE} --preset study --state active    # for modeling in active state
 ./structure_prediction/run.py ${FASTA_FILE} --preset study --state inactive  # for modeling in inactive state
 ```
+In addition to this script, you may use a ColabFold-based script that is utilized for our [Colab notebook](https://colab.research.google.com/github/huhlim/alphafold-multistate/blob/main/AlphaFold_multistate.ipynb)
+```bash
+./structure_prediction/run_colabfold.py ${FASTA_FILE} --state active   # for modeling in active state
+./structure_prediction/run_colabfold.py ${FASTA_FILE} --state inactive # for modeling in inactive state
+```
+Note that, this script is optimized for our Colab notebook environment and has not extensively tested. Also, running this script creates a directory, `gpcr100`, which contains symbolic links to the required database files.
+
 - The original AlphaFold protocol
 ```bash
 ./structure_prediction/run.py ${FASTA_FILE} --preset original
