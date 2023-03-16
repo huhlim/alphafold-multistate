@@ -66,9 +66,8 @@ class RunModel:
 
   def __init__(self,
                config: ml_collections.ConfigDict,
-               params: Optional[Mapping[str, Mapping[str, np.ndarray]]] = None,
-               jit_compile=False
-               ):
+               params: Optional[Mapping[str, Mapping[str, jax.Array]]] = None,
+               jit_compile=False):
     self.config = config
     self.params = params
     self.jit_compile = jit_compile
@@ -185,3 +184,4 @@ class RunModel:
     logging.info('Output shape was %s',
                  tree.map_structure(lambda x: x.shape, result))
     return result
+

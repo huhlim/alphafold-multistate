@@ -21,9 +21,8 @@ mgnify_database_path = os.path.join(data_dir, 'mgnify', 'mgy_clusters.fa')
 bfd_database_path = os.path.join(data_dir, 'bfd', 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt')
 small_bfd_database_path = os.path.join(data_dir, 'small_bfd', 'bfd-first_non_consensus_sequences.fasta')
 
-# Path to the Uniclust30 database for use by HHblits.
-uniclust30_database_path = os.path.join(data_dir, 'uniclust30', 'uc30')
-    #data_dir, 'uniclust30', 'uniclust30_2018_08', 'uniclust30_2018_08')
+# Path to the UniRef30 database for use by HHblits.
+uniref30_database_path = os.path.join(data_dir, 'uniclust30', 'uc30')
 
 # Path to the UniProt database for used by JackHMMer.
 uniprot_database_path = os.path.join(data_dir, 'uniprot', 'uniprot.fasta')
@@ -62,5 +61,9 @@ model_names = [
 script_home = os.path.dirname(os.path.abspath(__file__))
 exec_run_alphafold = os.path.join(script_home, 'run_af.py')
 exec_run_tbm = os.path.join(script_home, 'run_tbm.py')
+
 gpcr100_active_db_path = "/feig/s1/huhlim/work/af/multi_state/GPCRdb/GPCR100.Active"
 gpcr100_inactive_db_path = "/feig/s1/huhlim/work/af/multi_state/GPCRdb/GPCR100.Inactive"
+
+mmcif_active_db_path = "/feig/s1/huhlim/work/af/multi_state/GPCRdb/cif.Active"
+mmcif_inactive_db_path = "/feig/s1/huhlim/work/af/multi_state/GPCRdb/cif.Inactive"

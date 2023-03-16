@@ -135,7 +135,7 @@ class DataPipeline:
                uniref90_database_path: str,
                mgnify_database_path: str,
                bfd_database_path: Optional[str],
-               uniclust30_database_path: Optional[str],
+               uniref30_database_path: Optional[str],
                small_bfd_database_path: Optional[str],
                template_searcher: TemplateSearcher,
                template_featurizer: templates.TemplateHitFeaturizer,
@@ -158,13 +158,13 @@ class DataPipeline:
         binary_path=jackhmmer_binary_path,
         database_path=uniref90_database_path, n_cpu=n_cpu)
     if use_small_bfd:
-      self.jackhmmer_small_bfd_runner = jackhmmer.Jackhmmer(
-          binary_path=jackhmmer_binary_path,
-          database_path=small_bfd_database_path, n_cpu=n_cpu)
+        self.jackhmmer_small_bfd_runner = jackhmmer.Jackhmmer(
+            binary_path=jackhmmer_binary_path,
+            database_path=small_bfd_database_path, n_cpu=n_cpu)
     else:
-      self.hhblits_bfd_uniclust_runner = hhblits.HHBlits(
-          binary_path=hhblits_binary_path,
-          databases=[bfd_database_path, uniclust30_database_path], n_cpu=n_cpu)
+        self.hhblits_bfd_uniref_runner = hhblits.HHBlits(
+            binary_path=hhblits_binary_path,
+            databases=[bfd_database_path, uniref30_database_path], n_cpu=n_cpu)
     self.jackhmmer_mgnify_runner = jackhmmer.Jackhmmer(
         binary_path=jackhmmer_binary_path,
         database_path=mgnify_database_path, n_cpu=n_cpu)
@@ -188,15 +188,17 @@ class DataPipeline:
     # MSA-based features
     if self._use_msa:
       if input_msa_path:
-        msa_features = \
+        msa_features, msa_for_templates = \
             self._process_input_msa(input_fasta_path, input_msa_path, msa_output_dir)
-        msa_for_templates = None
+        msa_for_templates_format = "a3m"
       else:
         msa_features, msa_for_templates = \
             self._process_search_msa(input_fasta_path, msa_output_dir)
+        msa_for_templates_format = "sto"
     else:
       msa_features = self._process_null_msa(input_sequence, msa_output_dir)
-      msa_for_templates = None
+      msa_for_templates = f">null\n{input_sequence}\n"
+      msa_for_templates_format = "a3m"
 
     # template structure-based features
     if self._use_template:
@@ -204,7 +206,8 @@ class DataPipeline:
         msa_for_templates = \
           self._process_search_msa_for_templates(input_fasta_path, msa_output_dir)
       templates_features = \
-          self._process_search_templates(input_sequence, msa_for_templates, msa_output_dir)
+          self._process_search_templates(input_sequence, msa_for_templates, msa_output_dir, \
+                  msa_format=msa_for_templates_format)
     else:
       templates_features = self._process_null_templates(input_sequence)
 
@@ -280,14 +283,14 @@ class DataPipeline:
           use_precomputed_msas=self.use_precomputed_msas)
       bfd_msa = parsers.parse_stockholm(jackhmmer_small_bfd_result['sto'])
     else:
-      bfd_out_path = os.path.join(msa_output_dir, 'bfd_uniclust_hits.a3m')
-      hhblits_bfd_uniclust_result = run_msa_tool(
-          msa_runner=self.hhblits_bfd_uniclust_runner,
+      bfd_out_path = os.path.join(msa_output_dir, 'bfd_uniref_hits.a3m')
+      hhblits_bfd_uniref_result = run_msa_tool(
+          msa_runner=self.hhblits_bfd_uniref_runner,
           input_fasta_path=input_fasta_path,
           msa_out_path=bfd_out_path,
           msa_format='a3m',
           use_precomputed_msas=self.use_precomputed_msas)
-      bfd_msa = parsers.parse_a3m(hhblits_bfd_uniclust_result['a3m'])
+      bfd_msa = parsers.parse_a3m(hhblits_bfd_uniref_result['a3m'])
 
     msa_features = make_msa_features((uniref90_msa, bfd_msa, mgnify_msa))
 
@@ -314,8 +317,6 @@ class DataPipeline:
         'sto', self.use_precomputed_msas)
 
     msa_for_templates = jackhmmer_uniref90_result['sto']
-    #msa_for_templates = parsers.truncate_stockholm_msa(
-    #    msa_for_templates, max_sequences=self.uniref_max_hits)
     msa_for_templates = parsers.deduplicate_stockholm_msa(
         msa_for_templates)
     msa_for_templates = parsers.remove_empty_columns_from_stockholm_msa(
@@ -334,7 +335,7 @@ class DataPipeline:
     logging.info('Input MSA size: %d sequences.', len(out_msa))
     logging.info('Final (deduplicated) MSA size: %d sequences.',
                  msa_features['num_alignments'][0])
-    return msa_features
+    return msa_features, a3m
 
   def _process_null_msa(self, input_sequence, msa_output_dir):
     out_path = os.path.join(msa_output_dir, 'input_seq.a3m')
@@ -351,12 +352,17 @@ class DataPipeline:
                  msa_features['num_alignments'][0])
     return msa_features
 
-  def _process_search_templates(self, input_sequence, msa_for_templates, msa_output_dir):
+  def _process_search_templates(self, input_sequence, msa_for_templates, msa_output_dir, msa_format="sto"):
     # search templates
     if self.template_searcher.input_format == 'sto':    # HMMer
+      if msa_format == "a3m":
+        raise ValueError(f"Not compatible MSA format {msa_format} for template search.")
       pdb_templates_result = self.template_searcher.query(msa_for_templates)
     elif self.template_searcher.input_format == 'a3m':  # HHsearch
-      uniref90_msa_as_a3m = parsers.convert_stockholm_to_a3m(msa_for_templates)
+      if msa_format == "sto":
+        uniref90_msa_as_a3m = parsers.convert_stockholm_to_a3m(msa_for_templates)
+      elif msa_format == "a3m":
+        uniref90_msa_as_a3m = msa_for_templates
       pdb_templates_result = self.template_searcher.query(uniref90_msa_as_a3m)
     else:
       raise ValueError('Unrecognized template input format: '
