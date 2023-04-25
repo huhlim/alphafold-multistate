@@ -1,5 +1,8 @@
 # Multi-state modeling of protein structures using AlphaFold
 
+[![Google Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/huhlim/alphafold-multistate/blob/main/AlphaFold_multistate.ipynb)</br>
+
+
 ## Building state-annotated HHsuite databases
 All the required scripts and examples are in [build_state_annotated_databases](https://github.com/huhlim/alphafold-multistate/tree/main/build_state_annotated_databases)
 1. **Getting activation state annotations for available experimental GPCR structures**  
@@ -20,8 +23,8 @@ GPCR100.${state}_a3m.ff{data,index}
 GPCR100.${state}_hhm.ff{data,index}
 GPCR100.${state}_cs219.ff{data,index}
 ```
-5. **Pre-built GPCR databases**  
-State-annotated GPCR databases can be obtained from our repositories on [Zenodo](https://zenodo.org/record/5745217) or [Google Drive](https://drive.google.com/drive/folders/1JYp-6LkElUgpiWIB8GroSI_z9rlVmr5o?usp=sharing).
+5. **Pre-built GPCR/Kinase databases**  
+State-annotated GPCR databases can be obtained from our repositories on [Zenodo](https://zenodo.org/record/5745217) or [Google Drive](https://drive.google.com/drive/folders/1JYp-6LkElUgpiWIB8GroSI_z9rlVmr5o?usp=share_link).
 
 ## GPCR structure prediction using AlphaFold
 
@@ -87,6 +90,8 @@ A slightly modified protocol using ColabFold pipeline is implemented on [Colab](
 ## GPCR models in the active and inactive states
 We have modeled non-olfactory human GPCRs in the active and inactive states using our multi-state modeling protocol. The models are available via [Zenodo](https://zenodo.org/record/5745217) or [Google Drive](https://drive.google.com/drive/folders/1JYp-6LkElUgpiWIB8GroSI_z9rlVmr5o?usp=sharing).
 
+## Updates
+- Apr. 24, 2023: GPCR activation state-annotated databases are updated.
 ## References
 [1] Heo, L. and Feig, M., Multi-State Modeling of G-protein Coupled Receptors at Experimental Accuracy, _Proteins_ (**2022**), doi:10.1002/prot.26382. [Link](https://onlinelibrary.wiley.com/doi/10.1002/prot.26382)  
 [2] Jumper, J. _et al._, Highly accurate protein structure prediction with AlphaFold, _Nature_ (**2021**), 596, 583-589. [Link](https://www.nature.com/articles/s41586-021-03819-2)  
