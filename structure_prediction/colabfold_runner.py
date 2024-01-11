@@ -223,20 +223,6 @@ def run(
     result_dir.mkdir(exist_ok=True)
     model_type = set_model_type(is_complex, model_type)
 
-    # determine model extension
-    if model_type == "alphafold2_multimer_v1":
-        model_suffix = "_multimer"
-    elif model_type == "alphafold2_multimer_v2":
-        model_suffix = "_multimer_v2"
-    elif model_type == "alphafold2_multimer_v3":
-        model_suffix = "_multimer_v3"
-    elif model_type == "alphafold2_ptm":
-        model_suffix = "_ptm"
-    elif model_type == "alphafold2":
-        model_suffix = ""
-    else:
-        raise ValueError(f"Unknown model_type {model_type}")
-
     # backward-compatibility with old options
     old_names = {
         "MMseqs2 (UniRef+Environmental)": "mmseqs2_uniref_env",
@@ -482,7 +468,7 @@ def run(
                     num_recycles=num_recycles,
                     num_ensemble=num_ensemble,
                     model_order=model_order,
-                    model_suffix=model_suffix,
+                    model_type=model_type,
                     data_dir=data_dir,
                     stop_at_score=stop_at_score,
                     rank_by=rank_by,
